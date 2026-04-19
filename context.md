@@ -136,6 +136,9 @@ spiffs,   data, spiffs,  0x1F0000,0x210000   (~2.1MB LittleFS)
 - Dark theme, mobile-friendly, served from LittleFS
 - Features: WiFi setup, brightness slider (0–15), volume slider (0–100), prayer times table, test adzan button, restart button
 - Polls `/api/status` every 2 seconds for live updates
+- WiFi form uses **native HTML form POST** (not JavaScript fetch) — required for reliable AP mode operation
+- Captive portal DNS redirects all queries to 192.168.4.1 in AP mode
+- Handles OS connectivity checks (Apple CNA, Android generate_204, Windows fwlink)
 
 ## Known Items to Address Later
 

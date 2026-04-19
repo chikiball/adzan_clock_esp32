@@ -9,6 +9,7 @@ A real-time clock and adzan (Islamic call to prayer) reminder built with ESP32. 
 - **Adzan audio playback** via I2S DAC (UDA1334A) and amplifier (MAX98306)
 - **Automatic time sync** via NTP (Singapore timezone UTC+8)
 - **MUIS API integration** — fetches daily prayer times from [prayertimes.sg](https://api.prayertimes.sg/api/v1/prayer-times/today)
+- **Captive portal** with DNS redirect for reliable AP mode phone connectivity
 - **Web-based configuration portal** — WiFi setup, volume, brightness control
 - **Dual WiFi mode** — AP mode for setup, STA mode for operation
 - **Hijri date display** from API response
