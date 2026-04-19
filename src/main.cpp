@@ -3,6 +3,7 @@
 // ============================================================
 #include <Arduino.h>
 #include <LittleFS.h>
+#include <WiFi.h>
 #include "config.h"
 #include "wifi_manager.h"
 #include "time_sync.h"
@@ -240,11 +241,18 @@ void loop() {
     processSerial();
 
     // Debug: print time every 5 seconds if enabled
-    if (debugPrintTime && timeSync.isTimeSynced()) {
+    if (debugPrintTime) {
         unsigned long now = millis();
         if (now - lastTimePrint >= TIME_PRINT_INTERVAL) {
             lastTimePrint = now;
-            Serial.println("[TIME] " + timeSync.getTimeString() + " | Next: " + prayerTime.getNextPrayerInfo());
+            struct tm ti;
+            if (getLocalTime(&ti, 0)) {
+                Serial.printf("[TIME] %02d:%02d:%02d | Next: %s\n",
+                    ti.tm_hour, ti.tm_min, ti.tm_sec,
+                    prayerTime.getNextPrayerInfo().c_str());
+            } else {
+                Serial.println("[TIME] Not synced yet");
+            }
         }
     }
 
@@ -283,17 +291,6 @@ void loop() {
         // Show next prayer info on row 2
         display.showPrayerInfo(prayerTime.getNextPrayerInfo());
 
-        // Check for adzan time
-        if (prayerTime.isAdzanTime(h, m)) {
-            String prayerName = prayerTime.getCurrentAdzanName();
-            Serial.println("\n=============================");
-            Serial.println("[ADZAN] >>> TIME FOR " + prayerName + " <<<");
-            Serial.printf("[ADZAN] Triggered at %02d:%02d:%02d\n", h, m, s);
-            Serial.println("=============================\n");
-            display.showAdzanAlert(prayerName);
-            audioPlayer.playAdzan(false);  // Short version; set true for full
-        }
-
         // Midnight reset — re-fetch prayer times for new day
         struct tm timeinfo;
         getLocalTime(&timeinfo);
@@ -301,6 +298,25 @@ void loop() {
             lastDay = timeinfo.tm_mday;
             prayerTime.resetTriggers();
             prayerTime.fetchToday();
+        }
+    }
+
+    // Check for adzan time (works even if display isn't updating)
+    if (prayerTime.prayerCount > 0) {
+        struct tm ti;
+        if (getLocalTime(&ti, 0)) {
+            int h = ti.tm_hour;
+            int m = ti.tm_min;
+            int s = ti.tm_sec;
+            if (prayerTime.isAdzanTime(h, m)) {
+                String prayerName = prayerTime.getCurrentAdzanName();
+                Serial.println("\n=============================");
+                Serial.println("[ADZAN] >>> TIME FOR " + prayerName + " <<<");
+                Serial.printf("[ADZAN] Triggered at %02d:%02d:%02d\n", h, m, s);
+                Serial.println("=============================\n");
+                display.showAdzanAlert(prayerName);
+                audioPlayer.playAdzan(false);  // Short version; set true for full
+            }
         }
     }
 
