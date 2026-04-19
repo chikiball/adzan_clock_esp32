@@ -7,9 +7,9 @@
 #include <Arduino.h>
 #include <WiFi.h>
 
-enum WiFiMode_t {
-    MODE_AP,       // Access Point — config portal
-    MODE_STA       // Station — connected to home WiFi
+enum ClockWiFiMode {
+    CLOCK_MODE_AP,       // Access Point — config portal
+    CLOCK_MODE_STA       // Station — connected to home WiFi
 };
 
 class WifiManager {
@@ -18,7 +18,7 @@ public:
     void toggleMode();
     void startAP();
     bool connectSTA();
-    WiFiMode_t getCurrentMode();
+    ClockWiFiMode getCurrentMode();
     String getIP();
 
     // Stored credentials
@@ -26,7 +26,7 @@ public:
     bool loadCredentials(String& ssid, String& password);
 
 private:
-    WiFiMode_t _currentMode = MODE_STA;
+    ClockWiFiMode _currentMode = CLOCK_MODE_STA;
     String _ssid;
     String _password;
 };

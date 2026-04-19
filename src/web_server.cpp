@@ -50,7 +50,7 @@ void WebServerManager::setupRoutes() {
         doc["time"] = timeSync.getTimeString();
         doc["date"] = timeSync.getDateString();
         doc["hijri"] = prayerTime.getHijriDate();
-        doc["wifi_mode"] = (wifiMgr.getCurrentMode() == MODE_AP) ? "AP" : "STA";
+        doc["wifi_mode"] = (wifiMgr.getCurrentMode() == CLOCK_MODE_AP) ? "AP" : "STA";
         doc["ip"] = wifiMgr.getIP();
         doc["next_prayer"] = prayerTime.getNextPrayerInfo();
 

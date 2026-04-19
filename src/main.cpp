@@ -62,7 +62,7 @@ void setup() {
     webServer.begin();
 
     // If in STA mode, sync time and fetch prayer times
-    if (wifiMgr.getCurrentMode() == MODE_STA) {
+    if (wifiMgr.getCurrentMode() == CLOCK_MODE_STA) {
         timeSync.begin();
 
         if (timeSync.syncNTP()) {
@@ -89,7 +89,7 @@ void loop() {
         buttonPressed = false;
         wifiMgr.toggleMode();
 
-        if (wifiMgr.getCurrentMode() == MODE_AP) {
+        if (wifiMgr.getCurrentMode() == CLOCK_MODE_AP) {
             display.showMessage("AP Mode", AP_SSID);
         } else {
             if (wifiMgr.connectSTA()) {
@@ -106,7 +106,7 @@ void loop() {
     }
 
     // Update display
-    if (wifiMgr.getCurrentMode() == MODE_STA && timeSync.isTimeSynced()) {
+    if (wifiMgr.getCurrentMode() == CLOCK_MODE_STA && timeSync.isTimeSynced()) {
         int h, m, s;
         timeSync.getTime(h, m, s);
 

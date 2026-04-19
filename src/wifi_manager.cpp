@@ -17,7 +17,7 @@ void WifiManager::startAP() {
     WiFi.mode(WIFI_AP);
     WiFi.softAPConfig(AP_IP, AP_IP, IPAddress(255, 255, 255, 0));
     WiFi.softAP(AP_SSID, AP_PASSWORD);
-    _currentMode = MODE_AP;
+    _currentMode = CLOCK_MODE_AP;
     Serial.println("[WIFI] AP started: " + String(AP_SSID));
     Serial.println("[WIFI] AP IP: " + WiFi.softAPIP().toString());
 }
@@ -42,7 +42,7 @@ bool WifiManager::connectSTA() {
     Serial.println();
 
     if (WiFi.status() == WL_CONNECTED) {
-        _currentMode = MODE_STA;
+        _currentMode = CLOCK_MODE_STA;
         Serial.println("[WIFI] Connected! IP: " + WiFi.localIP().toString());
         return true;
     }
@@ -52,20 +52,20 @@ bool WifiManager::connectSTA() {
 }
 
 void WifiManager::toggleMode() {
-    if (_currentMode == MODE_AP) {
-        _currentMode = MODE_STA;
+    if (_currentMode == CLOCK_MODE_AP) {
+        _currentMode = CLOCK_MODE_STA;
     } else {
-        _currentMode = MODE_AP;
+        _currentMode = CLOCK_MODE_AP;
         startAP();
     }
 }
 
-WiFiMode_t WifiManager::getCurrentMode() {
+ClockWiFiMode WifiManager::getCurrentMode() {
     return _currentMode;
 }
 
 String WifiManager::getIP() {
-    if (_currentMode == MODE_AP) {
+    if (_currentMode == CLOCK_MODE_AP) {
         return WiFi.softAPIP().toString();
     }
     return WiFi.localIP().toString();
