@@ -144,3 +144,20 @@ spiffs,   data, spiffs,  0x1F0000,0x210000   (~2.1MB LittleFS)
 3. **Audio files** — User must provide `adzan_short.mp3` and/or `adzan_full.mp3` in `data/` folder
 4. **TP4056 without battery** — Works as USB pass-through but has no power regulation; ensure downstream components handle 5V directly
 5. **HTTPS on ESP32** — The MUIS API uses HTTPS; may need WiFiClientSecure with root CA cert or `setInsecure()` for testing
+
+## Serial Debug Commands
+
+Available via Serial Monitor at 115200 baud (type command + Enter):
+
+| Command | Action |
+|---|---|
+| `time` | Toggle printing `[TIME] HH:MM:SS | Next: <prayer> HH:MM` every 5 seconds |
+| `mode` | Toggle WiFi mode (AP ↔ STA), same as physical button |
+| `status` | Print current status: mode, IP, time, sync state, next prayer, debug flags |
+| `help` | Show available commands |
+
+## Upload Notes
+
+- **Firmware**: `pio run --target upload`
+- **Filesystem (LittleFS)**: `pio run --target uploadfs`
+- If upload fails with "Wrong boot mode detected (0x13)": hold the **BOOT** button on the ESP32 during upload, release when progress starts

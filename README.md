@@ -108,6 +108,14 @@ Place your adzan MP3 files in the `data/` folder before uploading the filesystem
    - Test adzan playback
    - Restart device
 
+5. **Serial debug commands** — Open Serial Monitor at 115200 baud
+   | Command | Action |
+   |---|---|
+   | `time` | Toggle printing current time every 5 seconds |
+   | `mode` | Toggle WiFi mode (AP ↔ STA) |
+   | `status` | Print current device status (mode, IP, time, sync, next prayer) |
+   | `help` | Show available commands |
+
 ## Project Structure
 
 ```
