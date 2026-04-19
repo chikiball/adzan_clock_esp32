@@ -61,8 +61,10 @@ void handleSerialCommand(const String& cmd) {
 
         if (wifiMgr.getCurrentMode() == CLOCK_MODE_AP) {
             Serial.println("[DEBUG] Switched to AP mode: " + String(AP_SSID));
+            webServer.startDNS();
             display.showMessage("AP Mode", AP_SSID);
         } else {
+            webServer.stopDNS();
             if (wifiMgr.connectSTA()) {
                 Serial.println("[DEBUG] Switched to STA mode: " + wifiMgr.getIP());
                 display.showMessage("WiFi OK", wifiMgr.getIP().c_str());
@@ -71,6 +73,7 @@ void handleSerialCommand(const String& cmd) {
             } else {
                 Serial.println("[DEBUG] STA connection failed, reverting to AP");
                 wifiMgr.startAP();
+                webServer.startDNS();
                 display.showMessage("AP Mode", AP_SSID);
             }
         }
@@ -133,6 +136,7 @@ void setup() {
     if (!wifiMgr.connectSTA()) {
         Serial.println("[WIFI] STA failed, starting AP mode");
         wifiMgr.startAP();
+        webServer.startDNS();  // Captive portal DNS in AP mode
         display.showMessage("AP Mode", AP_SSID);
     } else {
         Serial.println("[WIFI] Connected: " + wifiMgr.getIP());
@@ -184,8 +188,10 @@ void loop() {
         wifiMgr.toggleMode();
 
         if (wifiMgr.getCurrentMode() == CLOCK_MODE_AP) {
+            webServer.startDNS();
             display.showMessage("AP Mode", AP_SSID);
         } else {
+            webServer.stopDNS();
             if (wifiMgr.connectSTA()) {
                 display.showMessage("WiFi OK", wifiMgr.getIP().c_str());
                 timeSync.syncNTP();
@@ -194,6 +200,7 @@ void loop() {
                 display.showMessage("WiFi", "FAILED");
                 delay(1000);
                 wifiMgr.startAP();
+                webServer.startDNS();
                 display.showMessage("AP Mode", AP_SSID);
             }
         }
@@ -230,6 +237,9 @@ void loop() {
 
     // Feed audio buffer if playing
     audioPlayer.loop();
+
+    // Process DNS captive portal requests
+    webServer.loop();
 
     // Update display animations
     display.update();

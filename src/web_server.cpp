@@ -10,12 +10,15 @@
 #include "time_sync.h"
 
 #include <ESPAsyncWebServer.h>
+#include <DNSServer.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 
 WebServerManager webServer;
 
 static AsyncWebServer server(80);
+static DNSServer dnsServer;
+static bool dnsRunning = false;
 
 void WebServerManager::begin() {
     setupRoutes();
@@ -24,8 +27,29 @@ void WebServerManager::begin() {
     Serial.println("[WEB] Server started on port 80");
 }
 
+void WebServerManager::startDNS() {
+    // Redirect all DNS queries to our IP (captive portal)
+    dnsServer.start(53, "*", AP_IP);
+    dnsRunning = true;
+    Serial.println("[WEB] DNS captive portal started");
+}
+
+void WebServerManager::stopDNS() {
+    if (dnsRunning) {
+        dnsServer.stop();
+        dnsRunning = false;
+    }
+}
+
+void WebServerManager::loop() {
+    if (dnsRunning) {
+        dnsServer.processNextRequest();
+    }
+}
+
 void WebServerManager::stop() {
     server.end();
+    stopDNS();
     _running = false;
 }
 
@@ -122,5 +146,32 @@ void WebServerManager::setupRoutes() {
         request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Restarting...\"}");
         delay(500);
         ESP.restart();
+    });
+
+    // Captive portal: redirect any unknown requests to our config page
+    // This handles OS connectivity checks (Apple CNA, Android, Windows)
+    server.on("/generate_204", HTTP_GET, [](AsyncWebServerRequest* request) {
+        request->redirect("http://192.168.4.1/");
+    });
+    server.on("/fwlink", HTTP_GET, [](AsyncWebServerRequest* request) {
+        request->redirect("http://192.168.4.1/");
+    });
+    server.on("/hotspot-detect.html", HTTP_GET, [](AsyncWebServerRequest* request) {
+        request->redirect("http://192.168.4.1/");
+    });
+    server.on("/canonical.html", HTTP_GET, [](AsyncWebServerRequest* request) {
+        request->redirect("http://192.168.4.1/");
+    });
+    server.on("/connecttest.txt", HTTP_GET, [](AsyncWebServerRequest* request) {
+        request->redirect("http://192.168.4.1/");
+    });
+
+    // Catch-all: redirect unknown paths to root
+    server.onNotFound([](AsyncWebServerRequest* request) {
+        if (request->method() == HTTP_GET) {
+            request->redirect("http://192.168.4.1/");
+        } else {
+            request->send(404, "text/plain", "Not found");
+        }
     });
 }
