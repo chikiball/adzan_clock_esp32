@@ -18,11 +18,92 @@ unsigned long lastButtonPress = 0;
 // Midnight reset tracking
 int lastDay = -1;
 
+// Serial debug flags
+bool debugPrintTime = false;
+unsigned long lastTimePrint = 0;
+#define TIME_PRINT_INTERVAL 5000
+
+// Serial command buffer
+String serialBuffer = "";
+
 void IRAM_ATTR onButtonPress() {
     unsigned long now = millis();
     if (now - lastButtonPress > BUTTON_DEBOUNCE_MS) {
         buttonPressed = true;
         lastButtonPress = now;
+    }
+}
+
+// ============================================================
+// Serial Command Handler
+// ============================================================
+void printSerialHelp() {
+    Serial.println("\n=== Serial Commands ===");
+    Serial.println("  time    — Toggle printing current time every 5s");
+    Serial.println("  mode    — Toggle WiFi mode (AP <-> STA)");
+    Serial.println("  status  — Print current status");
+    Serial.println("  help    — Show this help");
+    Serial.println("========================\n");
+}
+
+void handleSerialCommand(const String& cmd) {
+    String command = cmd;
+    command.trim();
+    command.toLowerCase();
+
+    if (command == "time") {
+        debugPrintTime = !debugPrintTime;
+        Serial.printf("[DEBUG] Time printing: %s\n", debugPrintTime ? "ON (every 5s)" : "OFF");
+
+    } else if (command == "mode") {
+        Serial.println("[DEBUG] Toggling WiFi mode...");
+        wifiMgr.toggleMode();
+
+        if (wifiMgr.getCurrentMode() == CLOCK_MODE_AP) {
+            Serial.println("[DEBUG] Switched to AP mode: " + String(AP_SSID));
+            display.showMessage("AP Mode", AP_SSID);
+        } else {
+            if (wifiMgr.connectSTA()) {
+                Serial.println("[DEBUG] Switched to STA mode: " + wifiMgr.getIP());
+                display.showMessage("WiFi OK", wifiMgr.getIP().c_str());
+                timeSync.syncNTP();
+                prayerTime.fetchToday();
+            } else {
+                Serial.println("[DEBUG] STA connection failed, reverting to AP");
+                wifiMgr.startAP();
+                display.showMessage("AP Mode", AP_SSID);
+            }
+        }
+
+    } else if (command == "status") {
+        Serial.println("\n=== Status ===");
+        Serial.println("  Mode:   " + String(wifiMgr.getCurrentMode() == CLOCK_MODE_AP ? "AP" : "STA"));
+        Serial.println("  IP:     " + wifiMgr.getIP());
+        Serial.println("  Time:   " + timeSync.getTimeString());
+        Serial.println("  Synced: " + String(timeSync.isTimeSynced() ? "Yes" : "No"));
+        Serial.println("  Next:   " + prayerTime.getNextPrayerInfo());
+        Serial.println("  Debug:  Time print " + String(debugPrintTime ? "ON" : "OFF"));
+        Serial.println("==============\n");
+
+    } else if (command == "help") {
+        printSerialHelp();
+
+    } else if (command.length() > 0) {
+        Serial.println("[DEBUG] Unknown command: '" + command + "'. Type 'help' for commands.");
+    }
+}
+
+void processSerial() {
+    while (Serial.available()) {
+        char c = Serial.read();
+        if (c == '\n' || c == '\r') {
+            if (serialBuffer.length() > 0) {
+                handleSerialCommand(serialBuffer);
+                serialBuffer = "";
+            }
+        } else {
+            serialBuffer += c;
+        }
     }
 }
 
@@ -81,9 +162,22 @@ void setup() {
     }
 
     delay(1000);
+    printSerialHelp();
 }
 
 void loop() {
+    // Process serial commands
+    processSerial();
+
+    // Debug: print time every 5 seconds if enabled
+    if (debugPrintTime && timeSync.isTimeSynced()) {
+        unsigned long now = millis();
+        if (now - lastTimePrint >= TIME_PRINT_INTERVAL) {
+            lastTimePrint = now;
+            Serial.println("[TIME] " + timeSync.getTimeString() + " | Next: " + prayerTime.getNextPrayerInfo());
+        }
+    }
+
     // Handle button press — toggle WiFi mode
     if (buttonPressed) {
         buttonPressed = false;
