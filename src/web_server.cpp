@@ -70,81 +70,46 @@ void WebServerManager::setupRoutes() {
         request->send(200, "application/json", response);
     });
 
-    // API: Save WiFi credentials (POST with JSON body)
-    server.on("/api/wifi", HTTP_POST,
-        // Request handler — called after body is fully received
-        [](AsyncWebServerRequest* request) {
-            // Body was parsed in onBody callback, respond here
-            // (fallback if body handler didn't fire)
-            if (!request->_tempObject) {
-                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"No data received\"}");
+    // API: Save WiFi credentials (POST form-encoded)
+    server.on("/api/wifi", HTTP_POST, [](AsyncWebServerRequest* request) {
+        if (request->hasParam("ssid", true)) {
+            String ssid = request->getParam("ssid", true)->value();
+            String password = request->hasParam("password", true) ?
+                              request->getParam("password", true)->value() : "";
+
+            if (ssid.length() > 0) {
+                wifiMgr.saveCredentials(ssid, password);
+                Serial.println("[WEB] WiFi credentials saved: " + ssid);
+                request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Credentials saved. Restart to connect.\"}");
+            } else {
+                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"SSID required\"}");
             }
-        },
-        NULL,
-        // Body handler — parse JSON and respond
-        [](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
-            if (index == 0 && len == total) {
-                // Complete body received in one chunk
-                JsonDocument doc;
-                DeserializationError err = deserializeJson(doc, (char*)data, len);
-
-                if (err) {
-                    request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
-                    request->_tempObject = (void*)1;
-                    return;
-                }
-
-                String ssid = doc["ssid"].as<String>();
-                String password = doc["password"].as<String>();
-
-                if (ssid.length() > 0) {
-                    wifiMgr.saveCredentials(ssid, password);
-                    request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Credentials saved. Restart to connect.\"}");
-                } else {
-                    request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"SSID required\"}");
-                }
-                request->_tempObject = (void*)1;  // Mark as handled
-            }
+        } else {
+            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"SSID parameter missing\"}");
         }
-    );
+    });
 
-    // API: Set volume (POST with JSON body)
-    server.on("/api/volume", HTTP_POST,
-        [](AsyncWebServerRequest* request) {
-            if (!request->_tempObject)
-                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"No data\"}");
-        },
-        NULL,
-        [](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
-            if (index == 0 && len == total) {
-                JsonDocument doc;
-                deserializeJson(doc, (char*)data, len);
-                int vol = doc["volume"] | DEFAULT_VOLUME;
-                audioPlayer.setVolume(vol);
-                request->send(200, "application/json", "{\"status\":\"ok\"}");
-                request->_tempObject = (void*)1;
-            }
+    // API: Set volume (POST form-encoded)
+    server.on("/api/volume", HTTP_POST, [](AsyncWebServerRequest* request) {
+        if (request->hasParam("volume", true)) {
+            int vol = request->getParam("volume", true)->value().toInt();
+            audioPlayer.setVolume(vol);
+            request->send(200, "application/json", "{\"status\":\"ok\"}");
+        } else {
+            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"volume param missing\"}");
         }
-    );
+    });
 
-    // API: Set brightness (POST with JSON body)
-    server.on("/api/brightness", HTTP_POST,
-        [](AsyncWebServerRequest* request) {
-            if (!request->_tempObject)
-                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"No data\"}");
-        },
-        NULL,
-        [](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
-            if (index == 0 && len == total) {
-                JsonDocument doc;
-                deserializeJson(doc, (char*)data, len);
-                int brightness = doc["brightness"] | DEFAULT_BRIGHTNESS;
-                display.setBrightness(brightness);
-                request->send(200, "application/json", "{\"status\":\"ok\"}");
-                request->_tempObject = (void*)1;
-            }
+    // API: Set brightness (POST form-encoded)
+    server.on("/api/brightness", HTTP_POST, [](AsyncWebServerRequest* request) {
+        if (request->hasParam("brightness", true)) {
+            int brightness = request->getParam("brightness", true)->value().toInt();
+            display.setBrightness(brightness);
+            request->send(200, "application/json", "{\"status\":\"ok\"}");
+        } else {
+            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"brightness param missing\"}");
         }
-    );
+    });
 
     // API: Test adzan
     server.on("/api/test-adzan", HTTP_POST, [](AsyncWebServerRequest* request) {

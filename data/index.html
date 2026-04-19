@@ -117,10 +117,13 @@
             const ssid = document.getElementById('ssid').value;
             const password = document.getElementById('password').value;
             try {
+                const params = new URLSearchParams();
+                params.append('ssid', ssid);
+                params.append('password', password);
                 const res = await fetch('/api/wifi', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ssid, password })
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params.toString()
                 });
                 const data = await res.json();
                 alert(data.message);
@@ -136,10 +139,12 @@
         document.getElementById('brightness').addEventListener('input', async (e) => {
             const val = e.target.value;
             document.getElementById('brightness-val').textContent = val;
+            const params = new URLSearchParams();
+            params.append('brightness', val);
             await fetch('/api/brightness', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ brightness: parseInt(val) })
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
             });
         });
 
@@ -147,10 +152,12 @@
         document.getElementById('volume').addEventListener('input', async (e) => {
             const val = e.target.value;
             document.getElementById('volume-val').textContent = val;
+            const params = new URLSearchParams();
+            params.append('volume', val);
             await fetch('/api/volume', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ volume: parseInt(val) })
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
             });
         });
 
