@@ -157,6 +157,7 @@ Available via Serial Monitor at 115200 baud (type command + Enter):
 | `time` | Toggle printing `[TIME] HH:MM:SS | Next: <prayer> HH:MM` every 5 seconds |
 | `mode` | Toggle WiFi mode (AP ↔ STA), same as physical button |
 | `status` | Print current status: mode, IP, time, sync state, next prayer, debug flags |
+| `setnext HH:MM` | Override next upcoming prayer time temporarily (for testing adzan trigger) |
 | `help` | Show available commands |
 
 ## Upload Notes

@@ -115,6 +115,7 @@ Place your adzan MP3 files in the `data/` folder before uploading the filesystem
    | `time` | Toggle printing current time every 5 seconds |
    | `mode` | Toggle WiFi mode (AP ↔ STA) |
    | `status` | Print current device status (mode, IP, time, sync, next prayer) |
+   | `setnext HH:MM` | Override next prayer time temporarily (e.g. `setnext 14:30`) |
    | `help` | Show available commands |
 
 ## Project Structure

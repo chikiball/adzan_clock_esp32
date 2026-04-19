@@ -39,10 +39,11 @@ void IRAM_ATTR onButtonPress() {
 // ============================================================
 void printSerialHelp() {
     Serial.println("\n=== Serial Commands ===");
-    Serial.println("  time    — Toggle printing current time every 5s");
-    Serial.println("  mode    — Toggle WiFi mode (AP <-> STA)");
-    Serial.println("  status  — Print current status");
-    Serial.println("  help    — Show this help");
+    Serial.println("  time          — Toggle printing current time every 5s");
+    Serial.println("  mode          — Toggle WiFi mode (AP <-> STA)");
+    Serial.println("  status        — Print current status");
+    Serial.println("  setnext HH:MM — Set next prayer time (temporary, for testing)");
+    Serial.println("  help          — Show this help");
     Serial.println("========================\n");
 }
 
@@ -87,6 +88,52 @@ void handleSerialCommand(const String& cmd) {
         Serial.println("  Next:   " + prayerTime.getNextPrayerInfo());
         Serial.println("  Debug:  Time print " + String(debugPrintTime ? "ON" : "OFF"));
         Serial.println("==============\n");
+
+    } else if (command.startsWith("setnext")) {
+        // setnext HH:MM — override the next upcoming prayer time for testing
+        String timeArg = command.substring(7);
+        timeArg.trim();
+        int colonIdx = timeArg.indexOf(':');
+        if (colonIdx > 0) {
+            int h = timeArg.substring(0, colonIdx).toInt();
+            int m = timeArg.substring(colonIdx + 1).toInt();
+            if (h >= 0 && h <= 23 && m >= 0 && m <= 59) {
+                // Find the next untriggered prayer and override it
+                bool found = false;
+                struct tm timeinfo;
+                int nowMinutes = 0;
+                if (getLocalTime(&timeinfo)) {
+                    nowMinutes = timeinfo.tm_hour * 60 + timeinfo.tm_min;
+                }
+                for (int i = 0; i < prayerTime.prayerCount; i++) {
+                    int pMin = prayerTime.prayers[i].hour * 60 + prayerTime.prayers[i].minute;
+                    if (pMin > nowMinutes && !prayerTime.prayers[i].triggered) {
+                        Serial.printf("[DEBUG] Changed %s from %02d:%02d to %02d:%02d (temporary)\n",
+                            prayerTime.prayers[i].name.c_str(),
+                            prayerTime.prayers[i].hour, prayerTime.prayers[i].minute,
+                            h, m);
+                        prayerTime.prayers[i].hour = h;
+                        prayerTime.prayers[i].minute = m;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    Serial.println("[DEBUG] No upcoming prayer to override. Overriding first prayer.");
+                    if (prayerTime.prayerCount > 0) {
+                        prayerTime.prayers[0].hour = h;
+                        prayerTime.prayers[0].minute = m;
+                        prayerTime.prayers[0].triggered = false;
+                        Serial.printf("[DEBUG] Set %s to %02d:%02d\n",
+                            prayerTime.prayers[0].name.c_str(), h, m);
+                    }
+                }
+            } else {
+                Serial.println("[DEBUG] Invalid time. Use: setnext HH:MM (e.g. setnext 14:30)");
+            }
+        } else {
+            Serial.println("[DEBUG] Usage: setnext HH:MM (e.g. setnext 14:30)");
+        }
 
     } else if (command == "help") {
         printSerialHelp();
