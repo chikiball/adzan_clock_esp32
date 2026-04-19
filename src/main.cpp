@@ -43,6 +43,7 @@ void printSerialHelp() {
     Serial.println("  mode          — Toggle WiFi mode (AP <-> STA)");
     Serial.println("  status        — Print current status");
     Serial.println("  setnext HH:MM — Set next prayer time (temporary, for testing)");
+    Serial.println("  fetch         — Re-fetch prayer times from API (resets setnext)");
     Serial.println("  help          — Show this help");
     Serial.println("========================\n");
 }
@@ -133,6 +134,24 @@ void handleSerialCommand(const String& cmd) {
             }
         } else {
             Serial.println("[DEBUG] Usage: setnext HH:MM (e.g. setnext 14:30)");
+        }
+
+    } else if (command == "fetch") {
+        Serial.println("[DEBUG] Re-fetching prayer times from API...");
+        if (WiFi.status() == WL_CONNECTED) {
+            if (prayerTime.fetchToday()) {
+                Serial.println("[DEBUG] Prayer times updated:");
+                for (int i = 0; i < prayerTime.prayerCount; i++) {
+                    Serial.printf("  %s: %02d:%02d%s\n",
+                        prayerTime.prayers[i].name.c_str(),
+                        prayerTime.prayers[i].hour, prayerTime.prayers[i].minute,
+                        prayerTime.prayers[i].triggered ? " (done)" : "");
+                }
+            } else {
+                Serial.println("[DEBUG] Fetch failed!");
+            }
+        } else {
+            Serial.println("[DEBUG] No WiFi connection. Switch to STA mode first.");
         }
 
     } else if (command == "help") {
@@ -267,7 +286,10 @@ void loop() {
         // Check for adzan time
         if (prayerTime.isAdzanTime(h, m)) {
             String prayerName = prayerTime.getCurrentAdzanName();
-            Serial.println("[ADZAN] Time for " + prayerName);
+            Serial.println("\n=============================");
+            Serial.println("[ADZAN] >>> TIME FOR " + prayerName + " <<<");
+            Serial.printf("[ADZAN] Triggered at %02d:%02d:%02d\n", h, m, s);
+            Serial.println("=============================\n");
             display.showAdzanAlert(prayerName);
             audioPlayer.playAdzan(false);  // Short version; set true for full
         }

@@ -158,6 +158,7 @@ Available via Serial Monitor at 115200 baud (type command + Enter):
 | `mode` | Toggle WiFi mode (AP ↔ STA), same as physical button |
 | `status` | Print current status: mode, IP, time, sync state, next prayer, debug flags |
 | `setnext HH:MM` | Override next upcoming prayer time temporarily (for testing adzan trigger) |
+| `fetch` | Re-fetch prayer times from MUIS API (resets any setnext overrides) |
 | `help` | Show available commands |
 
 ## Upload Notes
