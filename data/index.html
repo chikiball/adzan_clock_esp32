@@ -53,7 +53,7 @@
 
         <div class="card">
             <h2>WiFi Settings</h2>
-            <form id="wifi-form">
+            <form id="wifi-form" method="POST" action="/api/wifi">
                 <div class="form-group">
                     <label for="ssid">SSID</label>
                     <input type="text" id="ssid" name="ssid" placeholder="Your WiFi name" required>
@@ -110,37 +110,6 @@
                 console.error('Status fetch failed:', e);
             }
         }
-
-        // WiFi form
-        document.getElementById('wifi-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const ssid = document.getElementById('ssid').value;
-            const password = document.getElementById('password').value;
-            try {
-                const params = new URLSearchParams();
-                params.append('ssid', ssid);
-                params.append('password', password);
-                const res = await fetch('/api/wifi', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: params.toString()
-                });
-                const text = await res.text();
-                console.log('WiFi response:', res.status, text);
-                try {
-                    const data = JSON.parse(text);
-                    alert(data.message || 'Done');
-                    if (data.status === 'ok') {
-                        setTimeout(() => fetch('/api/restart', { method: 'POST' }), 500);
-                    }
-                } catch (pe) {
-                    alert('Response (not JSON): ' + text);
-                }
-            } catch (e) {
-                alert('Network error: ' + e.message);
-                console.error('WiFi save error:', e);
-            }
-        });
 
         // Brightness slider
         document.getElementById('brightness').addEventListener('input', async (e) => {

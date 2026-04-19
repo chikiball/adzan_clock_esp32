@@ -94,7 +94,7 @@ void WebServerManager::setupRoutes() {
         request->send(200, "application/json", response);
     });
 
-    // API: Save WiFi credentials (POST form-encoded)
+    // API: Save WiFi credentials (plain HTML form POST)
     server.on("/api/wifi", HTTP_POST, [](AsyncWebServerRequest* request) {
         if (request->hasParam("ssid", true)) {
             String ssid = request->getParam("ssid", true)->value();
@@ -104,12 +104,27 @@ void WebServerManager::setupRoutes() {
             if (ssid.length() > 0) {
                 wifiMgr.saveCredentials(ssid, password);
                 Serial.println("[WEB] WiFi credentials saved: " + ssid);
-                request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Credentials saved. Restart to connect.\"}");
+
+                // Return a simple HTML page confirming save + auto-restart
+                String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'>"
+                    "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+                    "<style>body{background:#0a0a0a;color:#e0e0e0;font-family:sans-serif;"
+                    "display:flex;justify-content:center;align-items:center;height:100vh;"
+                    "text-align:center;}</style></head><body>"
+                    "<div><h2>&#9989; WiFi Saved!</h2>"
+                    "<p>SSID: <b>" + ssid + "</b></p>"
+                    "<p>Restarting in 3 seconds...</p>"
+                    "</div></body></html>";
+                request->send(200, "text/html", html);
+
+                // Schedule restart
+                delay(2000);
+                ESP.restart();
             } else {
-                request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"SSID required\"}");
+                request->send(400, "text/html", "<h2>Error: SSID is empty</h2><a href='/'>Back</a>");
             }
         } else {
-            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"SSID parameter missing\"}");
+            request->send(400, "text/html", "<h2>Error: No SSID provided</h2><a href='/'>Back</a>");
         }
     });
 
