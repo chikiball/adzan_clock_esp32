@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adzan Clock Settings</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🕌 Adzan Clock</h1>
+        <div id="status" class="card">
+            <h2>Status</h2>
+            <div class="status-grid">
+                <div class="status-item">
+                    <span class="label">Time</span>
+                    <span id="current-time" class="value">--:--:--</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Date</span>
+                    <span id="current-date" class="value">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Hijri</span>
+                    <span id="hijri-date" class="value">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">WiFi</span>
+                    <span id="wifi-mode" class="value">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">IP</span>
+                    <span id="ip-addr" class="value">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Next Prayer</span>
+                    <span id="next-prayer" class="value">--</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Prayer Times Today</h2>
+            <table id="prayer-table">
+                <thead>
+                    <tr><th>Prayer</th><th>Time</th><th>Status</th></tr>
+                </thead>
+                <tbody id="prayer-body">
+                    <tr><td colspan="3">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>WiFi Settings</h2>
+            <form id="wifi-form">
+                <div class="form-group">
+                    <label for="ssid">SSID</label>
+                    <input type="text" id="ssid" name="ssid" placeholder="Your WiFi name" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="WiFi password">
+                </div>
+                <button type="submit" class="btn">Save & Restart</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Display & Audio</h2>
+            <div class="form-group">
+                <label for="brightness">Brightness: <span id="brightness-val">5</span></label>
+                <input type="range" id="brightness" min="0" max="15" value="5">
+            </div>
+            <div class="form-group">
+                <label for="volume">Volume: <span id="volume-val">80</span>%</label>
+                <input type="range" id="volume" min="0" max="100" value="80">
+            </div>
+            <button class="btn btn-secondary" onclick="testAdzan()">🔊 Test Adzan</button>
+        </div>
+
+        <div class="card">
+            <button class="btn btn-danger" onclick="restartDevice()">Restart Device</button>
+        </div>
+    </div>
+
+    <script>
+        // Fetch status every 2 seconds
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                document.getElementById('current-time').textContent = data.time;
+                document.getElementById('current-date').textContent = data.date;
+                document.getElementById('hijri-date').textContent = data.hijri;
+                document.getElementById('wifi-mode').textContent = data.wifi_mode;
+                document.getElementById('ip-addr').textContent = data.ip;
+                document.getElementById('next-prayer').textContent = data.next_prayer;
+
+                const tbody = document.getElementById('prayer-body');
+                tbody.innerHTML = '';
+                if (data.prayers) {
+                    data.prayers.forEach(p => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${p.name}</td><td>${p.time}</td><td>${p.triggered ? '✅' : '⏳'}</td>`;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (e) {
+                console.error('Status fetch failed:', e);
+            }
+        }
+
+        // WiFi form
+        document.getElementById('wifi-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const ssid = document.getElementById('ssid').value;
+            const password = document.getElementById('password').value;
+            try {
+                const res = await fetch('/api/wifi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ssid, password })
+                });
+                const data = await res.json();
+                alert(data.message);
+                if (data.status === 'ok') {
+                    setTimeout(() => fetch('/api/restart', { method: 'POST' }), 500);
+                }
+            } catch (e) {
+                alert('Failed to save');
+            }
+        });
+
+        // Brightness slider
+        document.getElementById('brightness').addEventListener('input', async (e) => {
+            const val = e.target.value;
+            document.getElementById('brightness-val').textContent = val;
+            await fetch('/api/brightness', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ brightness: parseInt(val) })
+            });
+        });
+
+        // Volume slider
+        document.getElementById('volume').addEventListener('input', async (e) => {
+            const val = e.target.value;
+            document.getElementById('volume-val').textContent = val;
+            await fetch('/api/volume', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ volume: parseInt(val) })
+            });
+        });
+
+        async function testAdzan() {
+            await fetch('/api/test-adzan', { method: 'POST' });
+        }
+
+        async function restartDevice() {
+            if (confirm('Restart the device?')) {
+                await fetch('/api/restart', { method: 'POST' });
+                alert('Device restarting...');
+            }
+        }
+
+        // Poll status
+        fetchStatus();
+        setInterval(fetchStatus, 2000);
+    </script>
+</body>
+</html>
