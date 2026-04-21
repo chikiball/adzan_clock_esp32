@@ -72,7 +72,14 @@ String WifiManager::getIP() {
 }
 
 void WifiManager::saveCredentials(const String& ssid, const String& password) {
+    // Load existing config to preserve other settings
     JsonDocument doc;
+    File readFile = LittleFS.open(CONFIG_FILE, "r");
+    if (readFile) {
+        deserializeJson(doc, readFile);
+        readFile.close();
+    }
+
     doc["ssid"] = ssid;
     doc["password"] = password;
 

@@ -5,6 +5,7 @@
 #include <LittleFS.h>
 #include <WiFi.h>
 #include <esp_task_wdt.h>
+#include <ArduinoJson.h>
 #include "config.h"
 #include "wifi_manager.h"
 #include "time_sync.h"
@@ -194,6 +195,23 @@ void setup() {
     // Initialise modules
     display.begin();
     audioPlayer.begin();
+
+    // Load saved settings from config.json
+    {
+        File cfgFile = LittleFS.open(CONFIG_FILE, "r");
+        if (cfgFile) {
+            JsonDocument doc;
+            deserializeJson(doc, cfgFile);
+            cfgFile.close();
+            int vol = doc["volume"] | DEFAULT_VOLUME;
+            int bri = doc["brightness"] | DEFAULT_BRIGHTNESS;
+            audioPlayer.setVolume(vol);
+            display.setBrightness(bri);
+            Serial.printf("[CONFIG] Loaded: volume=%d, brightness=%d\n", vol, bri);
+        } else {
+            Serial.println("[CONFIG] No config file, using defaults");
+        }
+    }
     wifiMgr.begin();
 
     // Show startup message

@@ -59,9 +59,34 @@ bool WebServerManager::isRunning() {
 
 void WebServerManager::setupRoutes() {
 
-    // Serve the config page
+    // Serve the config page with current settings injected
     server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
-        request->send(LittleFS, "/index.html", "text/html");
+        // Load current settings from config
+        int curVolume = DEFAULT_VOLUME;
+        int curBrightness = DEFAULT_BRIGHTNESS;
+        File cfgFile = LittleFS.open(CONFIG_FILE, "r");
+        if (cfgFile) {
+            JsonDocument doc;
+            deserializeJson(doc, cfgFile);
+            cfgFile.close();
+            curVolume = doc["volume"] | DEFAULT_VOLUME;
+            curBrightness = doc["brightness"] | DEFAULT_BRIGHTNESS;
+        }
+
+        // Use template processor to inject values
+        char volStr[4], briStr[3];
+        snprintf(volStr, sizeof(volStr), "%d", curVolume);
+        snprintf(briStr, sizeof(briStr), "%d", curBrightness);
+        String sVol = String(volStr);
+        String sBri = String(briStr);
+
+        request->send(LittleFS, "/index.html", "text/html", false,
+            [sVol, sBri](const String& var) -> String {
+                if (var == "VOLUME") return sVol;
+                if (var == "BRIGHTNESS") return sBri;
+                return String();
+            }
+        );
     });
 
     server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest* request) {
@@ -128,18 +153,36 @@ void WebServerManager::setupRoutes() {
         }
     });
 
-    // API: Save display & audio settings (form POST)
+    // API: Save display & audio settings (form POST, persisted to config.json)
     server.on("/api/settings", HTTP_POST, [](AsyncWebServerRequest* request) {
+        // Load existing config
+        JsonDocument doc;
+        File readFile = LittleFS.open(CONFIG_FILE, "r");
+        if (readFile) {
+            deserializeJson(doc, readFile);
+            readFile.close();
+        }
+
         if (request->hasParam("volume", true)) {
             int vol = request->getParam("volume", true)->value().toInt();
             audioPlayer.setVolume(vol);
+            doc["volume"] = vol;
             Serial.printf("[WEB] Volume set to %d%%\n", vol);
         }
         if (request->hasParam("brightness", true)) {
             int brightness = request->getParam("brightness", true)->value().toInt();
             display.setBrightness(brightness);
+            doc["brightness"] = brightness;
             Serial.printf("[WEB] Brightness set to %d\n", brightness);
         }
+
+        // Save to config.json
+        File writeFile = LittleFS.open(CONFIG_FILE, "w");
+        if (writeFile) {
+            serializeJson(doc, writeFile);
+            writeFile.close();
+        }
+
         String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'>"
             "<meta name='viewport' content='width=device-width,initial-scale=1'>"
             "<style>body{background:#0a0a0a;color:#e0e0e0;font-family:sans-serif;"
