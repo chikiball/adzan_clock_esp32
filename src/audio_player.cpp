@@ -5,20 +5,26 @@
 #include "config.h"
 
 #include <AudioFileSourceLittleFS.h>
+#include <AudioFileSourceBuffer.h>
 #include <AudioGeneratorMP3.h>
 #include <AudioOutputI2S.h>
 
 AudioPlayer audioPlayer;
 
-static AudioGeneratorMP3*       mp3 = nullptr;
-static AudioFileSourceLittleFS* file = nullptr;
-static AudioOutputI2S*          out = nullptr;
+static AudioGeneratorMP3*       mp3    = nullptr;
+static AudioFileSourceLittleFS* file   = nullptr;
+static AudioFileSourceBuffer*   buffer = nullptr;
+static AudioOutputI2S*          out    = nullptr;
+
+// Buffer size for file reads — prevents LittleFS stalls from crashing decoder
+#define AUDIO_BUFFER_SIZE 2048
 
 void AudioPlayer::begin() {
     out = new AudioOutputI2S();
     out->SetPinout(PIN_I2S_BCLK, PIN_I2S_LRC, PIN_I2S_DOUT);
     out->SetGain((float)_volume / 100.0f);
     Serial.println("[AUDIO] I2S output initialised (UDA1334A)");
+    Serial.printf("[AUDIO] Free heap: %u bytes\n", ESP.getFreeHeap());
 }
 
 void AudioPlayer::playAdzan(bool fullVersion) {
@@ -26,6 +32,7 @@ void AudioPlayer::playAdzan(bool fullVersion) {
     stop();
 
     const char* path = fullVersion ? ADZAN_FULL_PATH : ADZAN_SHORT_PATH;
+    Serial.printf("[AUDIO] Free heap before play: %u bytes\n", ESP.getFreeHeap());
 
     file = new AudioFileSourceLittleFS(path);
     if (!file->isOpen()) {
@@ -35,11 +42,20 @@ void AudioPlayer::playAdzan(bool fullVersion) {
         return;
     }
 
-    mp3 = new AudioGeneratorMP3();
-    mp3->begin(file, out);
-    _playing = true;
+    // Wrap file source in a buffer to prevent flash read stalls
+    buffer = new AudioFileSourceBuffer(file, AUDIO_BUFFER_SIZE);
 
+    mp3 = new AudioGeneratorMP3();
+
+    if (!mp3->begin(buffer, out)) {
+        Serial.println("[AUDIO] MP3 begin failed");
+        stop();
+        return;
+    }
+
+    _playing = true;
     Serial.printf("[AUDIO] Playing %s\n", path);
+    Serial.printf("[AUDIO] Free heap after start: %u bytes\n", ESP.getFreeHeap());
 }
 
 void AudioPlayer::stop() {
@@ -47,6 +63,10 @@ void AudioPlayer::stop() {
         if (mp3->isRunning()) mp3->stop();
         delete mp3;
         mp3 = nullptr;
+    }
+    if (buffer) {
+        delete buffer;
+        buffer = nullptr;
     }
     if (file) {
         delete file;
