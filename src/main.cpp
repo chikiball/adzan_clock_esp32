@@ -237,6 +237,8 @@ void setup() {
 }
 
 void loop() {
+    static bool firstLoop = true;
+    if (firstLoop) { Serial.println("[LOOP] Entered main loop"); firstLoop = false; }
     // Process serial commands
     processSerial();
 
@@ -328,4 +330,7 @@ void loop() {
 
     // Update display animations
     display.update();
+
+    // Yield to prevent watchdog reset
+    delay(1);
 }
