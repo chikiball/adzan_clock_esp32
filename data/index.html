@@ -76,11 +76,11 @@
                 <label for="volume">Volume: <span id="volume-val">80</span>%</label>
                 <input type="range" id="volume" min="0" max="100" value="80">
             </div>
-            <button class="btn btn-secondary" onclick="testAdzan()">🔊 Test Adzan</button>
+            <form method="POST" action="/api/test-adzan" style="display:inline"><button type="submit" class="btn btn-secondary">🔊 Test Adzan</button></form>
         </div>
 
         <div class="card">
-            <button class="btn btn-danger" onclick="restartDevice()">Restart Device</button>
+            <form method="POST" action="/api/restart"><button type="submit" class="btn btn-danger" onclick="return confirm('Restart the device?')">Restart Device</button></form>
         </div>
     </div>
 
@@ -137,16 +137,8 @@
             });
         });
 
-        async function testAdzan() {
-            await fetch('/api/test-adzan', { method: 'POST' });
         }
 
-        async function restartDevice() {
-            if (confirm('Restart the device?')) {
-                await fetch('/api/restart', { method: 'POST' });
-                alert('Device restarting...');
-            }
-        }
 
         // Poll status
         fetchStatus();

@@ -152,14 +152,16 @@ void WebServerManager::setupRoutes() {
 
     // API: Test adzan
     server.on("/api/test-adzan", HTTP_POST, [](AsyncWebServerRequest* request) {
+        Serial.println("[WEB] Test adzan requested");
         audioPlayer.playAdzan(false);
-        request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Playing test adzan\"}");
+        request->redirect("/");
     });
 
     // API: Restart ESP
     server.on("/api/restart", HTTP_POST, [](AsyncWebServerRequest* request) {
-        request->send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Restarting...\"}");
-        delay(500);
+        Serial.println("[WEB] Restart requested");
+        request->send(200, "text/html", "<h2>Restarting...</h2>");
+        delay(1000);
         ESP.restart();
     });
 
