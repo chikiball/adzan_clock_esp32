@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <LittleFS.h>
 #include <WiFi.h>
+#include <esp_task_wdt.h>
 #include "config.h"
 #include "wifi_manager.h"
 #include "time_sync.h"
@@ -179,7 +180,9 @@ void processSerial() {
 
 void setup() {
     Serial.begin(115200);
-    disableCore0WDT();  // Prevent async_tcp watchdog timeout (known ESPAsyncWebServer issue)
+    disableCore0WDT();
+    disableCore1WDT();
+    esp_task_wdt_deinit();  // Fully disable task watchdog timer
     Serial.println("\n=== Adzan Clock ESP32 ===");
 
     // Initialise LittleFS
