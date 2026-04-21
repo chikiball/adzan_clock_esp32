@@ -179,6 +179,7 @@ void processSerial() {
 
 void setup() {
     Serial.begin(115200);
+    disableCore0WDT();  // Prevent async_tcp watchdog timeout (known ESPAsyncWebServer issue)
     Serial.println("\n=== Adzan Clock ESP32 ===");
 
     // Initialise LittleFS
