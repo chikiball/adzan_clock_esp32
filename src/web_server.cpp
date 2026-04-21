@@ -128,26 +128,27 @@ void WebServerManager::setupRoutes() {
         }
     });
 
-    // API: Set volume (POST form-encoded)
-    server.on("/api/volume", HTTP_POST, [](AsyncWebServerRequest* request) {
+    // API: Save display & audio settings (form POST)
+    server.on("/api/settings", HTTP_POST, [](AsyncWebServerRequest* request) {
         if (request->hasParam("volume", true)) {
             int vol = request->getParam("volume", true)->value().toInt();
             audioPlayer.setVolume(vol);
-            request->send(200, "application/json", "{\"status\":\"ok\"}");
-        } else {
-            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"volume param missing\"}");
+            Serial.printf("[WEB] Volume set to %d%%\n", vol);
         }
-    });
-
-    // API: Set brightness (POST form-encoded)
-    server.on("/api/brightness", HTTP_POST, [](AsyncWebServerRequest* request) {
         if (request->hasParam("brightness", true)) {
             int brightness = request->getParam("brightness", true)->value().toInt();
             display.setBrightness(brightness);
-            request->send(200, "application/json", "{\"status\":\"ok\"}");
-        } else {
-            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"brightness param missing\"}");
+            Serial.printf("[WEB] Brightness set to %d\n", brightness);
         }
+        String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'>"
+            "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+            "<style>body{background:#0a0a0a;color:#e0e0e0;font-family:sans-serif;"
+            "display:flex;justify-content:center;align-items:center;height:100vh;"
+            "text-align:center;}</style></head><body>"
+            "<div><h2>&#9989; Settings Saved!</h2>"
+            "<p><a href='http://192.168.4.1/' style='color:#4fc3f7'>Back to Settings</a></p>"
+            "</div></body></html>";
+        request->send(200, "text/html", html);
     });
 
     // API: Test adzan
