@@ -93,6 +93,7 @@ void AudioPlayer::loop() {
                 // Playback finished
                 stop();
                 Serial.println("[AUDIO] Playback complete");
+                Serial.printf("[AUDIO] Free heap after stop: %u bytes\n", ESP.getFreeHeap());
             }
         } else {
             stop();

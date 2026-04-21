@@ -154,7 +154,15 @@ void WebServerManager::setupRoutes() {
     server.on("/api/test-adzan", HTTP_POST, [](AsyncWebServerRequest* request) {
         Serial.println("[WEB] Test adzan requested");
         audioPlayer.playAdzan(false);
-        request->redirect("/");
+        String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'>"
+            "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+            "<style>body{background:#0a0a0a;color:#e0e0e0;font-family:sans-serif;"
+            "display:flex;justify-content:center;align-items:center;height:100vh;"
+            "text-align:center;}</style></head><body>"
+            "<div><h2>&#128266; Playing Adzan...</h2>"
+            "<p><a href='http://192.168.4.1/' style='color:#4fc3f7'>Back to Settings</a></p>"
+            "</div></body></html>";
+        request->send(200, "text/html", html);
     });
 
     // API: Restart ESP
