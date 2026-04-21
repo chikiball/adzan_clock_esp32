@@ -180,9 +180,6 @@ void processSerial() {
 
 void setup() {
     Serial.begin(115200);
-    disableCore0WDT();
-    disableCore1WDT();
-    esp_task_wdt_deinit();  // Fully disable task watchdog timer
     Serial.println("\n=== Adzan Clock ESP32 ===");
 
     // Initialise LittleFS
