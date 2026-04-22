@@ -49,6 +49,7 @@ void printSerialHelp() {
     Serial.println("  status        — Print current status");
     Serial.println("  setnext HH:MM — Set next prayer time (temporary, for testing)");
     Serial.println("  fetch         — Re-fetch prayer times from API (resets setnext)");
+    Serial.println("  sync          — Force NTP time sync");
     Serial.println("  tone          — Play 1kHz test tone for 3s (hardware test)");
     Serial.println("  help          — Show this help");
     Serial.println("========================\n");
@@ -76,6 +77,7 @@ void handleSerialCommand(const String& cmd) {
             if (wifiMgr.connectSTA()) {
                 Serial.println("[DEBUG] Switched to STA mode: " + wifiMgr.getIP());
                 display.showMessage("WiFi OK", wifiMgr.getIP().c_str());
+                timeSync.begin();
                 timeSync.syncNTP();
                 prayerTime.fetchToday();
             } else {
@@ -158,6 +160,15 @@ void handleSerialCommand(const String& cmd) {
             }
         } else {
             Serial.println("[DEBUG] No WiFi connection. Switch to STA mode first.");
+        }
+
+    } else if (command == "sync") {
+        Serial.println("[DEBUG] Forcing NTP sync...");
+        timeSync.begin();
+        if (timeSync.syncNTP()) {
+            Serial.println("[DEBUG] Time synced: " + timeSync.getTimeString());
+        } else {
+            Serial.println("[DEBUG] Sync failed — check WiFi connection");
         }
 
     } else if (command == "tone") {
@@ -315,6 +326,7 @@ void loop() {
             webServer.stopDNS();
             if (wifiMgr.connectSTA()) {
                 display.showMessage("WiFi OK", wifiMgr.getIP().c_str());
+                timeSync.begin();
                 timeSync.syncNTP();
                 prayerTime.fetchToday();
             } else {

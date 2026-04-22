@@ -4,20 +4,60 @@
 #include "time_sync.h"
 #include "config.h"
 #include <time.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <WiFi.h>
 
 TimeSync timeSync;
 
 void TimeSync::begin() {
-    configTime(GMT_OFFSET_SEC, DAYLIGHT_OFFSET, NTP_SERVER);
+    // Try multiple NTP servers
+    configTime(GMT_OFFSET_SEC, DAYLIGHT_OFFSET,
+               "pool.ntp.org", "time.google.com", "time.nist.gov");
+    Serial.println("[NTP] Configured NTP servers");
 }
 
 bool TimeSync::syncNTP() {
+    // Try NTP first (10 second timeout)
     struct tm timeinfo;
-    if (getLocalTime(&timeinfo, 5000)) {
+    Serial.println("[NTP] Attempting NTP sync...");
+    if (getLocalTime(&timeinfo, 10000)) {
         _synced = true;
+        Serial.println("[NTP] NTP sync successful");
         return true;
     }
+
+    // NTP failed — fallback: get time from WorldTimeAPI via HTTP
+    Serial.println("[NTP] NTP failed, trying HTTP time API fallback...");
+    if (WiFi.status() == WL_CONNECTED) {
+        HTTPClient http;
+        http.begin("http://worldtimeapi.org/api/timezone/Asia/Singapore");
+        int httpCode = http.GET();
+        if (httpCode == 200) {
+            String payload = http.getString();
+            JsonDocument doc;
+            deserializeJson(doc, payload);
+            long unixtime = doc["unixtime"] | 0;
+            if (unixtime > 0) {
+                // Set system time from unix timestamp
+                struct timeval tv;
+                tv.tv_sec = unixtime;
+                tv.tv_usec = 0;
+                settimeofday(&tv, NULL);
+                // Re-configure timezone
+                setenv("TZ", "SGT-8", 1);
+                tzset();
+                _synced = true;
+                Serial.println("[NTP] HTTP time sync successful");
+                http.end();
+                return true;
+            }
+        }
+        http.end();
+    }
+
     _synced = false;
+    Serial.println("[NTP] All sync methods failed");
     return false;
 }
 
