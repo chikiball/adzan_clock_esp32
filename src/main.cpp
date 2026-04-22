@@ -6,6 +6,8 @@
 #include <WiFi.h>
 #include <esp_task_wdt.h>
 #include <ArduinoJson.h>
+#include <math.h>
+#include <AudioOutputI2S.h>
 #include "config.h"
 #include "wifi_manager.h"
 #include "time_sync.h"
@@ -47,6 +49,7 @@ void printSerialHelp() {
     Serial.println("  status        — Print current status");
     Serial.println("  setnext HH:MM — Set next prayer time (temporary, for testing)");
     Serial.println("  fetch         — Re-fetch prayer times from API (resets setnext)");
+    Serial.println("  tone          — Play 1kHz test tone for 3s (hardware test)");
     Serial.println("  help          — Show this help");
     Serial.println("========================\n");
 }
@@ -156,6 +159,29 @@ void handleSerialCommand(const String& cmd) {
         } else {
             Serial.println("[DEBUG] No WiFi connection. Switch to STA mode first.");
         }
+
+    } else if (command == "tone") {
+        Serial.println("[DEBUG] Playing 1kHz test tone for 3 seconds...");
+        Serial.println("[DEBUG] If no sound: check UDA1334A wiring + MAX98306 SD pin");
+        // Generate sine wave directly via I2S - bypasses MP3/LittleFS
+        AudioOutputI2S *testOut = new AudioOutputI2S();
+        testOut->SetPinout(PIN_I2S_BCLK, PIN_I2S_LRC, PIN_I2S_DOUT);
+        testOut->SetGain(0.5f);
+        testOut->begin();
+        // 1kHz sine at 44100Hz sample rate, 16-bit
+        unsigned long startMs = millis();
+        float phase = 0.0f;
+        float phaseInc = 2.0f * 3.14159f * 1000.0f / 44100.0f;
+        while (millis() - startMs < 3000) {
+            int16_t sample = (int16_t)(sinf(phase) * 16000.0f);
+            int16_t samples[2] = {sample, sample};  // L + R
+            while (!testOut->ConsumeSample(samples)) { yield(); }
+            phase += phaseInc;
+            if (phase > 2.0f * 3.14159f) phase -= 2.0f * 3.14159f;
+        }
+        testOut->stop();
+        delete testOut;
+        Serial.println("[DEBUG] Tone complete");
 
     } else if (command == "help") {
         printSerialHelp();

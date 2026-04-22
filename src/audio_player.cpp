@@ -31,6 +31,15 @@ void AudioPlayer::playAdzan(bool fullVersion) {
     // Stop any current playback
     stop();
 
+    // Recreate I2S output to re-establish DAC connection
+    // (handles hot-unplug/replug of UDA1334A)
+    if (out) {
+        delete out;
+    }
+    out = new AudioOutputI2S();
+    out->SetPinout(PIN_I2S_BCLK, PIN_I2S_LRC, PIN_I2S_DOUT);
+    out->SetGain((float)_volume / 100.0f);
+
     const char* path = fullVersion ? ADZAN_FULL_PATH : ADZAN_SHORT_PATH;
     Serial.printf("[AUDIO] Free heap before play: %u bytes\n", ESP.getFreeHeap());
 
