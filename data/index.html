@@ -71,11 +71,11 @@
             <form method="POST" action="/api/settings">
                 <div class="form-group">
                     <label for="brightness">Brightness: <span id="brightness-val">%BRIGHTNESS%</span></label>
-                    <input type="range" id="brightness" name="brightness" min="0" max="15" value="%BRIGHTNESS%" oninput="document.getElementById('brightness-val').textContent=this.value">
+                    <input type="range" id="brightness" name="brightness" min="0" max="15" value="%BRIGHTNESS%">
                 </div>
                 <div class="form-group">
-                    <label for="volume">Volume: <span id="volume-val">%VOLUME%</span>%</label>
-                    <input type="range" id="volume" name="volume" min="0" max="100" value="%VOLUME%" oninput="document.getElementById('volume-val').textContent=this.value">
+                    <label for="volume">Volume: <span id="volume-val">%VOLUME%</span></label>
+                    <input type="range" id="volume" name="volume" min="0" max="100" value="%VOLUME%">
                 </div>
                 <button type="submit" class="btn">Save Settings</button>
             </form>
@@ -89,6 +89,14 @@
     </div>
 
     <script>
+        // Slider live value display
+        document.getElementById('brightness').addEventListener('input', function(e) {
+            document.getElementById('brightness-val').textContent = e.target.value;
+        });
+        document.getElementById('volume').addEventListener('input', function(e) {
+            document.getElementById('volume-val').textContent = e.target.value;
+        });
+
         // Fetch status every 2 seconds
         async function fetchStatus() {
             try {
